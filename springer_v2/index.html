@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Springer Capital — Referral Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:        #07090f;
+    --surface:   #0e1119;
+    --surface2:  #151824;
+    --border:    #1e2535;
+    --accent:    #00e5ff;
+    --accent2:   #7c5cfc;
+    --accent3:   #ff4d6d;
+    --gold:      #f5c842;
+    --green:     #00e096;
+    --text:      #e8eaf2;
+    --muted:     #5a6380;
+    --card-glow: 0 0 40px rgba(0,229,255,0.04);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    position: relative; z-index: 10;
+    padding: 48px 48px 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,229,255,0.04) 0%, transparent 100%);
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-left {}
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block; width: 24px; height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    margin-top: 10px; color: var(--muted);
+    font-size: 14px; font-weight: 300;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; padding: 6px 14px; border-radius: 100px;
+    letter-spacing: 0.05em;
+  }
+  .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* ── Layout ── */
+  .dashboard {
+    position: relative; z-index: 1;
+    padding: 40px 48px 60px;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* ── KPI Cards ── */
+  .kpi-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    position: relative; overflow: hidden;
+    box-shadow: var(--card-glow);
+    transition: border-color 0.3s, transform 0.3s;
+    animation: fadeUp 0.6s ease both;
+  }
+  .kpi:hover { border-color: rgba(0,229,255,0.3); transform: translateY(-2px); }
+  .kpi::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--kpi-color, var(--accent));
+    opacity: 0.7;
+  }
+  .kpi-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 16px;
+    background: rgba(255,255,255,0.04);
+  }
+  .kpi-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px; font-weight: 800;
+    letter-spacing: -0.03em; line-height: 1;
+    color: var(--text);
+  }
+  .kpi-label {
+    margin-top: 6px; font-size: 12px;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .kpi-sub {
+    margin-top: 4px; font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--kpi-color, var(--accent));
+  }
+
+  /* ── Chart Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--card-glow);
+    transition: border-color 0.3s;
+    animation: fadeUp 0.7s ease both;
+  }
+  .card:hover { border-color: rgba(124,92,252,0.2); }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--muted); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    width: 3px; height: 14px; border-radius: 2px;
+    background: var(--accent2);
+  }
+
+  /* Grid positions */
+  .col-4  { grid-column: span 4; }
+  .col-5  { grid-column: span 5; }
+  .col-6  { grid-column: span 6; }
+  .col-7  { grid-column: span 7; }
+  .col-8  { grid-column: span 8; }
+  .col-12 { grid-column: 1 / -1; }
+
+  @media (max-width: 1100px) {
+    .col-4, .col-5, .col-6, .col-7, .col-8 { grid-column: 1 / -1; }
+    .dashboard { padding: 24px; }
+    .header { padding: 28px 24px; }
+  }
+
+  /* ── Fraud alert table ── */
+  .fraud-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12px;
+  }
+  .fraud-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .fraud-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text);
+    max-width: 260px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fraud-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .fraud-badge {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 500;
+  }
+  .fraud-c1 { background: rgba(255,77,109,0.15); color: #ff4d6d; }
+  .fraud-c2 { background: rgba(255,165,0,0.15);  color: #ffa500; }
+  .fraud-c3 { background: rgba(124,92,252,0.15); color: #a080ff; }
+  .fraud-c4 { background: rgba(245,200,66,0.15); color: #f5c842; }
+  .fraud-c5 { background: rgba(0,229,150,0.15);  color: #00e096; }
+
+  /* ── Legend items ── */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 2px;
+  }
+
+  /* ── Stat bar ── */
+  .stat-bar-row {
+    display: flex; flex-direction: column; gap: 14px;
+    margin-top: 8px;
+  }
+  .stat-bar-item {}
+  .stat-bar-label {
+    display: flex; justify-content: space-between;
+    margin-bottom: 6px; font-size: 12px;
+  }
+  .stat-bar-name { color: var(--text); }
+  .stat-bar-val  { font-family: 'DM Mono', monospace; color: var(--muted); }
+  .stat-bar-track {
+    height: 6px; background: var(--surface2);
+    border-radius: 3px; overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: var(--accent);
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Validity gauge ── */
+  .gauge-container {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 200px;
+    position: relative;
+  }
+  .gauge-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px; font-weight: 800;
+    color: var(--green);
+  }
+  .gauge-sublabel {
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .gauge-ring {
+    position: relative; width: 160px; height: 160px;
+    margin-bottom: 16px;
+  }
+  .gauge-ring svg {
+    transform: rotate(-90deg);
+  }
+  .gauge-ring-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+
+  /* ── Section divider ── */
+  .section-divider {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 16px;
+    padding: 8px 0;
+  }
+  .section-divider span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted);
+    white-space: nowrap;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Footer ── */
+  .footer {
+    grid-column: 1 / -1;
+    text-align: center; padding-top: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────── -->
+<header class="header">
+  <div class="header-left">
+    <div class="eyebrow">Springer Capital · Data Engineering</div>
+    <h1>Referral Program<br><span>Analytics Dashboard</span></h1>
+    <div class="subtitle">Pipeline output · March – May 2024 · All timestamps in Asia/Jakarta</div>
+  </div>
+  <div>
+    <div class="badge">
+      <div class="badge-dot"></div>
+      Pipeline Status: Complete
+    </div>
+  </div>
+</header>
+
+<!-- ── DASHBOARD GRID ─────────────────────────────── -->
+<div class="dashboard">
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi" style="--kpi-color: var(--accent); animation-delay: 0.0s">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-value">46</div>
+      <div class="kpi-label">Total Referrals</div>
+      <div class="kpi-sub">Mar – May 2024</div>
+    </div>
+    <div class="kpi" style="--kpi-color: var(--green); animation-delay: 0.1s">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-value">35</div>
+      <div class="kpi-label">Valid Rewards</div>
+      <div class="kpi-sub">76.1% pass rate</div>
+    </div>
+    <div class="kpi" style="--kpi-color: var(--accent3); animation-delay: 0.2s">
+      <div class="kpi-icon">🚨</div>
+      <div class="kpi-value">11</div>
+      <div class="kpi-label">Fraud Flagged</div>
+      <div class="kpi-sub">23.9% flagged</div>
+    </div>
+    <div class="kpi" style="--kpi-color: var(--gold); animation-delay: 0.3s">
+      <div class="kpi-icon">🏆</div>
+      <div class="kpi-value">8</div>
+      <div class="kpi-label">Berhasil</div>
+      <div class="kpi-sub">Successful referrals</div>
+    </div>
+    <div class="kpi" style="--kpi-color: var(--accent2); animation-delay: 0.4s">
+      <div class="kpi-icon">💳</div>
+      <div class="kpi-value">14</div>
+      <div class="kpi-label">Transactions</div>
+      <div class="kpi-sub">13 NEW · 1 REJOIN</div>
+    </div>
+    <div class="kpi" style="--kpi-color: #ff9f43; animation-delay: 0.5s">
+      <div class="kpi-icon">🎁</div>
+      <div class="kpi-value">17</div>
+      <div class="kpi-label">Rewards Granted</div>
+      <div class="kpi-sub">of 96 log entries</div>
+    </div>
+  </div>
+
+  <!-- SECTION: Pipeline Overview -->
+  <div class="section-divider">
+    <span>Pipeline Analytics</span>
+  </div>
+
+  <!-- Chart 1: Monthly Referrals Trend -->
+  <div class="card col-8" style="animation-delay:0.2s">
+    <div class="card-title">Monthly Referral Volume</div>
+    <canvas id="monthlyChart" height="200"></canvas>
+  </div>
+
+  <!-- Chart 2: Validity Gauge -->
+  <div class="card col-4" style="animation-delay:0.3s">
+    <div class="card-title">Validity Rate</div>
+    <div class="gauge-container">
+      <div class="gauge-ring">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="65" fill="none" stroke="#1e2535" stroke-width="14"/>
+          <circle cx="80" cy="80" r="65" fill="none"
+            stroke="url(#gaugeGrad)" stroke-width="14"
+            stroke-linecap="round"
+            stroke-dasharray="408.41"
+            stroke-dashoffset="98"
+            style="transition: stroke-dashoffset 1.5s ease"/>
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#00e096"/>
+              <stop offset="100%" stop-color="#00e5ff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="gauge-ring-label">
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--green)">76%</div>
+          <div style="font-size:10px;color:var(--muted);letter-spacing:0.1em">VALID</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--green)"></div>
+          <span style="color:var(--muted)">Valid 35</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--accent3)"></div>
+          <span style="color:var(--muted)">Flagged 11</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 3: Referral Source Breakdown -->
+  <div class="card col-4" style="animation-delay:0.35s">
+    <div class="card-title">Referral Source</div>
+    <canvas id="sourceChart" height="220"></canvas>
+  </div>
+
+  <!-- Chart 4: Referral Status -->
+  <div class="card col-4" style="animation-delay:0.4s">
+    <div class="card-title">Referral Status</div>
+    <canvas id="statusChart" height="220"></canvas>
+  </div>
+
+  <!-- Chart 5: Top Clubs -->
+  <div class="card col-4" style="animation-delay:0.45s">
+    <div class="card-title">Referrer Home Clubs</div>
+    <div class="stat-bar-row" style="margin-top:8px">
+      <div class="stat-bar-item">
+        <div class="stat-bar-label">
+          <span class="stat-bar-name">BENHIL</span>
+          <span class="stat-bar-val">14</span>
+        </div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:100%;background:var(--accent)"></div></div>
+      </div>
+      <div class="stat-bar-item">
+        <div class="stat-bar-label">
+          <span class="stat-bar-name">BLOK M</span>
+          <span class="stat-bar-val">7</span>
+        </div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:50%;background:var(--accent2)"></div></div>
+      </div>
+      <div class="stat-bar-item">
+        <div class="stat-bar-label">
+          <span class="stat-bar-name">PLUIT</span>
+          <span class="stat-bar-val">5</span>
+        </div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:36%;background:var(--accent3)"></div></div>
+      </div>
+      <div class="stat-bar-item">
+        <div class="stat-bar-label">
+          <span class="stat-bar-name">ARTERI PONDOK INDAH</span>
+          <span class="stat-bar-val">1</span>
+        </div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:7%;background:var(--gold)"></div></div>
+      </div>
+      <div class="stat-bar-item">
+        <div class="stat-bar-label">
+          <span class="stat-bar-name">ADITYAWARMAN</span>
+          <span class="stat-bar-val">1</span>
+        </div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:7%;background:var(--green)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: Fraud Detection -->
+  <div class="section-divider" style="animation-delay:0.5s">
+    <span>🚨 Fraud Detection Results</span>
+  </div>
+
+  <!-- Chart 6: Fraud by Type -->
+  <div class="card col-5" style="animation-delay:0.55s">
+    <div class="card-title">Fraud Cases by Condition</div>
+    <canvas id="fraudChart" height="230"></canvas>
+  </div>
+
+  <!-- Fraud Detail Table -->
+  <div class="card col-7" style="animation-delay:0.6s">
+    <div class="card-title">Flagged Referrals — Detail</div>
+    <div style="overflow-x:auto">
+      <table class="fraud-table">
+        <thead>
+          <tr>
+            <th>#ID</th>
+            <th>Referral ID</th>
+            <th>Status</th>
+            <th>Reward Days</th>
+            <th>Fraud Condition</th>
+          </tr>
+        </thead>
+        <tbody id="fraudTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION: Pipeline Architecture -->
+  <div class="section-divider" style="animation-delay:0.65s">
+    <span>Pipeline Architecture</span>
+  </div>
+
+  <!-- Pipeline Flow -->
+  <div class="card col-12" style="animation-delay:0.7s">
+    <div class="card-title">ETL Pipeline — 5-Step Architecture</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;padding:16px 0">
+      <div id="step-load"    class="pipe-step" data-step="1" data-label="DATA LOADING"    data-detail="7 CSVs → DataFrames" data-icon="📥" data-color="var(--accent)"></div>
+      <div class="pipe-arrow">→</div>
+      <div id="step-profile" class="pipe-step" data-step="2" data-label="PROFILING"       data-detail="Nulls · Distinct · Min/Max" data-icon="🔍" data-color="var(--accent2)"></div>
+      <div class="pipe-arrow">→</div>
+      <div id="step-clean"   class="pipe-step" data-step="3" data-label="CLEANING"        data-detail="Types · Booleans · Initcap" data-icon="🧹" data-color="#ff9f43"></div>
+      <div class="pipe-arrow">→</div>
+      <div id="step-process" class="pipe-step" data-step="4" data-label="PROCESSING"      data-detail="Joins · Timezone · Dedup" data-icon="⚙️" data-color="var(--gold)"></div>
+      <div class="pipe-arrow">→</div>
+      <div id="step-fraud"   class="pipe-step" data-step="5" data-label="FRAUD DETECTION" data-detail="5 Rules · 46 Rows Output" data-icon="🛡️" data-color="var(--green)"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" style="animation-delay:0.9s">
+    SPRINGER CAPITAL · REFERRAL ANALYTICS DASHBOARD · DATA ENGINEER INTERN ASSESSMENT · 2024
+  </div>
+
+</div><!-- /dashboard -->
+
+<style>
+.pipe-step {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-align: center;
+  min-width: 160px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.pipe-step::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--step-color, var(--accent));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.pipe-step:hover::before { opacity: 1; }
+.pipe-step:hover {
+  border-color: rgba(0,229,255,0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.pipe-step-icon { font-size: 28px; margin-bottom: 10px; }
+.pipe-step-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  letter-spacing: 0.1em; margin-bottom: 4px;
+}
+.pipe-step-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--text);
+  text-transform: uppercase;
+}
+.pipe-step-detail {
+  margin-top: 6px; font-size: 11px;
+  color: var(--muted); font-family: 'DM Mono', monospace;
+}
+.pipe-arrow {
+  font-size: 20px; color: var(--border);
+  padding: 0 8px; font-weight: 300;
+}
+</style>
+
+<script>
+// ── Populate pipeline steps ──────────────────────────
+document.querySelectorAll('.pipe-step').forEach(el => {
+  const color = el.dataset.color;
+  el.style.setProperty('--step-color', color);
+  el.innerHTML = `
+    <div class="pipe-step-icon">${el.dataset.icon}</div>
+    <div class="pipe-step-num">STEP ${el.dataset.step}</div>
+    <div class="pipe-step-label">${el.dataset.label}</div>
+    <div class="pipe-step-detail">${el.dataset.detail}</div>
+  `;
+});
+
+// ── Chart defaults ───────────────────────────────────
+Chart.defaults.color = '#5a6380';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const gridColor = 'rgba(255,255,255,0.04)';
+const tooltipStyle = {
+  backgroundColor: '#151824',
+  borderColor: '#1e2535',
+  borderWidth: 1,
+  padding: 12,
+  titleColor: '#e8eaf2',
+  bodyColor: '#5a6380',
+  cornerRadius: 8,
+};
+
+// ── Chart 1: Monthly Referrals ───────────────────────
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['March 2024', 'April 2024', 'May 2024'],
+    datasets: [
+      {
+        label: 'Total Referrals',
+        data: [3, 5, 21],
+        backgroundColor: 'rgba(0,229,255,0.15)',
+        borderColor: '#00e5ff',
+        borderWidth: 2,
+        borderRadius: 6,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Valid',
+        data: [3, 4, 28],
+        type: 'line',
+        borderColor: '#00e096',
+        backgroundColor: 'rgba(0,224,150,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: '#00e096',
+        yAxisID: 'y',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: true }, tooltip: tooltipStyle },
+    scales: {
+      x: { grid: { color: gridColor }, border: { color: 'transparent' } },
+      y: {
+        grid: { color: gridColor }, border: { color: 'transparent' },
+        beginAtZero: true,
+        ticks: { stepSize: 5 }
+      }
+    }
+  }
+});
+
+// ── Chart 2: Referral Source ─────────────────────────
+new Chart(document.getElementById('sourceChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Draft Transaction', 'Lead', 'User Sign Up'],
+    datasets: [{
+      data: [27, 11, 8],
+      backgroundColor: ['rgba(124,92,252,0.8)', 'rgba(0,229,255,0.8)', 'rgba(0,224,150,0.8)'],
+      borderColor: '#07090f',
+      borderWidth: 3,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+      },
+      tooltip: tooltipStyle
+    }
+  }
+});
+
+// ── Chart 3: Referral Status ─────────────────────────
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Menunggu (Pending)', 'Tidak Berhasil (Failed)', 'Berhasil (Success)'],
+    datasets: [{
+      data: [29, 9, 8],
+      backgroundColor: ['rgba(245,200,66,0.8)', 'rgba(255,77,109,0.8)', 'rgba(0,224,150,0.8)'],
+      borderColor: '#07090f',
+      borderWidth: 3,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+      },
+      tooltip: tooltipStyle
+    }
+  }
+});
+
+// ── Chart 4: Fraud Conditions ────────────────────────
+new Chart(document.getElementById('fraudChart'), {
+  type: 'bar',
+  data: {
+    labels: ['FRAUD-C4\nBerhasil/No Reward', 'FRAUD-C1\nReward/Wrong Status', 'FRAUD-C5\nTxn Before Referral', 'FRAUD-C3\nPaid/No Reward'],
+    datasets: [{
+      label: 'Cases',
+      data: [3, 3, 1, 1],
+      backgroundColor: ['rgba(245,200,66,0.7)', 'rgba(255,77,109,0.7)', 'rgba(0,224,150,0.7)', 'rgba(124,92,252,0.7)'],
+      borderColor:     ['#f5c842', '#ff4d6d', '#00e096', '#7c5cfc'],
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+    scales: {
+      x: { grid: { color: gridColor }, border: { color: 'transparent' }, ticks: { stepSize: 1 } },
+      y: { grid: { color: 'transparent' }, border: { color: 'transparent' } }
+    }
+  }
+});
+
+// ── Fraud Table ───────────────────────────────────────
+const fraudData = [
+  { id: '102', ref: '6371079a...', status: 'Berhasil',       reward: '—',  code: 'C4', label: 'FRAUD-C4' },
+  { id: '107', ref: '835e9903...', status: 'Berhasil',       reward: '10', code: 'C1', label: 'FRAUD-C1' },
+  { id: '110', ref: 'a95d6a6c...', status: 'Berhasil',       reward: '—',  code: 'C4', label: 'FRAUD-C4' },
+  { id: '123', ref: '3c2d868e...', status: 'Berhasil',       reward: '10', code: 'C1', label: 'FRAUD-C1' },
+  { id: '133', ref: '7a03e01e...', status: 'Berhasil',       reward: '15', code: 'C1', label: 'FRAUD-C1' },
+  { id: '135', ref: '61717d10...', status: 'Tidak Berhasil', reward: '10', code: 'C4', label: 'FRAUD-C4' },
+  { id: '140', ref: '6667436...', status:  'Tidak Berhasil', reward: '—',  code: 'C3', label: 'FRAUD-C3' },
+  { id: '142', ref: 'd452feec...', status: 'Menunggu',       reward: '10', code: 'C1', label: 'FRAUD-C1' },
+  { id: '143', ref: '678d8990...', status: 'Menunggu',       reward: '—',  code: 'C5', label: 'FRAUD-C5' },
+  { id: '144', ref: '8882f8f0...', status: 'Menunggu',       reward: '20', code: 'C1', label: 'FRAUD-C1' },
+  { id: '145', ref: 'd0c11363...', status: 'Tidak Berhasil', reward: '—',  code: 'C4', label: 'FRAUD-C4' },
+];
+
+const colorMap = {
+  C1: 'fraud-c1', C2: 'fraud-c2', C3: 'fraud-c3', C4: 'fraud-c4', C5: 'fraud-c5'
+};
+const tbody = document.getElementById('fraudTableBody');
+fraudData.forEach(r => {
+  tbody.innerHTML += `
+    <tr>
+      <td style="color:var(--muted)">${r.id}</td>
+      <td style="font-size:10px;color:var(--muted)">${r.ref}</td>
+      <td>${r.status}</td>
+      <td>${r.reward}</td>
+      <td><span class="fraud-badge ${colorMap[r.code]}">${r.label}</span></td>
+    </tr>`;
+});
+</script>
+
+</body>
+</html>

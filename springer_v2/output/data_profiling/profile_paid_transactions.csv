@@ -1,0 +1,7 @@
+column_name,data_type,total_rows,null_count,null_pct,distinct_count,min_value,max_value
+transaction_id,str,14,0,0.0,14,07f21743663aacb7d212c286d47a14de,f192fca27d438c053db425fade152d66
+transaction_status,str,14,0,0.0,1,PAID,PAID
+transaction_at,str,14,0,0.0,14,2024-05-01T05:07:30.374Z,2024-05-21T09:47:11.535Z
+transaction_location,str,14,0,0.0,6,ADITYAWARMAN,SUNSET ROAD
+timezone_transaction,str,14,0,0.0,2,Asia/Jakarta,Asia/Makassar
+transaction_type,str,14,0,0.0,2,NEW,REJOIN

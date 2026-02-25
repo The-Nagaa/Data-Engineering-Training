@@ -1,0 +1,6 @@
+column_name,data_type,total_rows,null_count,null_pct,distinct_count,min_value,max_value
+id,int64,96,0,0.0,96,1,96
+user_referral_id,str,96,0,0.0,78,119330b602a0e3bc0b66487b6c53ec19,ffea2078bee21f79f199256757e5d578
+source_transaction_id,str,96,79,82.3,18,0d5745a60be9f0d9163c99c91fd61efc,de0d476b360046c0d079d5f8fcb77c00
+created_at,str,96,0,0.0,96,2024-03-08T11:33:50Z,2024-07-10T08:51:11Z
+is_reward_granted,bool,96,0,0.0,2,False,True

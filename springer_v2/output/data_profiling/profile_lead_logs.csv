@@ -1,0 +1,8 @@
+column_name,data_type,total_rows,null_count,null_pct,distinct_count,min_value,max_value
+id,int64,8,0,0.0,8,1,8
+lead_id,str,8,0,0.0,5,08b8ab0371b6a0cb79319628505c446c,c50f607bbae83f7c53551476e11997eb
+source_category,str,8,0,0.0,2,Offline,Online
+created_at,str,8,0,0.0,5,2024-01-31T08:53:22.403Z,2024-05-13T06:38:58.322Z
+preferred_location,str,8,0,0.0,3,ADITYAWARMAN,GAJAH MADA
+timezone_location,str,8,0,0.0,1,Asia/Jakarta,Asia/Jakarta
+current_status,str,8,0,0.0,5,Appointment,Warm

@@ -1,0 +1,9 @@
+column_name,data_type,total_rows,null_count,null_pct,distinct_count,min_value,max_value
+id,int64,29,0,0.0,29,1,29
+user_id,str,29,0,0.0,9,192befbbd8b97260e28db080a661578c,f2de40c8394f4ea9a6aa49965380dd8f
+name,str,29,0,0.0,7,003609f9b658dc89cd16d904783834d4,ec55b0c6b4cf5e7e08ddcfbc0465b796
+phone_number,str,29,0,0.0,9,488b1d38c3a3d84ab9839886acecf5e0,f495c5b0268d9896b8478ab32bfa02eb
+homeclub,str,29,0,0.0,6,ADITYAWARMAN,SUNSET ROAD
+timezone_homeclub,str,29,0,0.0,2,Asia/Jakarta,Asia/Makassar
+membership_expired_date,str,29,0,0.0,9,2024-03-31,2026-03-04
+is_deleted,bool,29,0,0.0,2,False,True
